@@ -1,0 +1,26 @@
+Package: reporting
+Title: Helps automate reports.
+Version: 0.0.1
+Authors@R: 
+    person("Josh", "Erickson", , "joshua.l.erickson@usda.gov", role = c("aut", "cre"))
+Description: This package retrieves data and then compiles into a report.
+Imports: 
+    rmarkdown,
+    dplyr,
+    reticulate,
+    crayon,
+    resourceviz,
+    showtext,
+    colorblindr,
+    ggtext,
+    httr,
+    plyr,
+    purrr,
+    stringr,
+    lubridate,
+    readr,
+    tidyr
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+License: MIT + file LICENSE
