@@ -6,7 +6,7 @@
 #'
 get_bmp_report <- function(fiscal_year = "'2022'"){
 
-  get_gpas(fiscal_year = fiscal_year)
+  #get_gpas(fiscal_year = fiscal_year)
 
   rmarkdown::render(system.file('app/www', 'nps_accomplishment_reporting', package = 'reporting'),
                     output_format = rmarkdown::word_document(reference_docx = system.file('app/www', 'word_template', package = 'reporting')))

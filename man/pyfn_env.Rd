@@ -5,7 +5,7 @@
 \alias{pyfn_env}
 \title{Python Function Environment}
 \format{
-An object of class \code{environment} of length 9.
+An object of class \code{environment} of length 0.
 }
 \usage{
 pyfn_env
