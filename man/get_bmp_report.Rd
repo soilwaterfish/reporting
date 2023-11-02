@@ -4,10 +4,10 @@
 \alias{get_bmp_report}
 \title{Run BMP Report}
 \usage{
-get_bmp_report()
+get_bmp_report(fiscal_year)
 }
 \arguments{
-\item{fiscal_year}{A quoted character.}
+\item{fiscal_year}{A character for fiscal year of report.}
 }
 \value{
 A rendered HTML report

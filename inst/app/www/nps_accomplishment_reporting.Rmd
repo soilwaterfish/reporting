@@ -57,7 +57,7 @@ report_df_filt_line <- report_df_lines %>%
                                                  if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Instream', 'Other')))
 
 g1 <- report_df_filt_poly %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
-  resourceviz::custom_theme(font_family = 'special', font_size = 9.5) + 
+  custom_theme(font_family = 'special', font_size = 9.5) + 
   colorblindr::scale_fill_OkabeIto() +
   labs(y = '', x = 'Area (acres)', fill = 'National Forest')+
   theme(legend.position = 'right')
