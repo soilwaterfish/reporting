@@ -4,7 +4,7 @@
 \alias{get_bmp_report}
 \title{Run BMP Report}
 \usage{
-get_bmp_report(fiscal_year = "'2022'")
+get_bmp_report()
 }
 \arguments{
 \item{fiscal_year}{A quoted character.}

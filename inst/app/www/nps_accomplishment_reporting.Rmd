@@ -3,15 +3,20 @@ title: ""
 output:
   word_document:
     reference_docx: "word_template.docx"
+params:
+  fiscal_year: "2023"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),message = F, warning = F, error = F)
 library(dplyr)
 library(stringr)
-library(plyr)
+library(sf)
 library(ggtext)
 library(showtext)
+library(readr)
+library(ggplot2)
+library(forcats)
 font_add_google("Open Sans", family = "special")
 showtext_auto()
 
@@ -24,22 +29,18 @@ showtext_opts(dpi = 1600)
 # report_df <- report_sf %>% st_drop_geometry()
 # report_df_lines <- report_sf_lines %>% st_drop_geometry()
 
-report_df <- read_csv('Z:/GIT/reporting/data/test_df_poly.csv')
-report_df_lines <- read_csv('Z:/GIT/reporting/data/test_df_lines.csv')
+report_df_poly <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_poly.csv')
+report_df_lines <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_lines.csv')
 
-report_df_filt <- report_df %>%
+poly_unique <- readxl::read_xlsx(r'{Z:\GIT\reporting\data\gpas_unique_values.xlsx}',
+                                 sheet = 'gpas_polygon_final_list')
+
+line_unique <- readxl::read_xlsx(r'{Z:\GIT\reporting\data\gpas_unique_values.xlsx}',
+                                 sheet = 'gpas_line_final_list')
+
+report_df_filt_poly <- report_df_poly %>%
              filter(SPATIAL_SIZE >= 0) %>% 
-             filter(ACTIVITY_CODE %in% c('Crossing Improvement-Fish','Crossing Improvement-NonFish','AOP Improvement',
-                                          'Crossing Removal','AOP Improvement','AOP Barrier Removed-NonRoad',
-                                          'AOP Barrier Removed-Road','AOP Eliminate Fish Entrainment','AOP Improvement-Road',
-                                          'Streambank Stabilization', 'Channel Reconstruction', 'Riparian Native Plant Restore',
-                                          'Planting- Riparian', 'Increase Large Wood', 'Fencing-Riparian', 'Riparian Thinning',
-                                          'Decommission-Treatment Scale 1','Decommission-Treatment Scale 2', 'Decommission-Treatment Scale 3', 'Decommission-Treatment Scale 4',
-                                          'Decommission-Treatment Scale 5', 'Road Maintenance', 'Road Repair', 'Road Stormproofing',
-                                          'Road Realignment', 'Instream Flow Secured', 'Abandoned Mine Land Reclamation', 'Wetland Restoration',
-                                         'Trail Stormproofing', 'Trail Realignment', 'Structure Removal', 'Structure Addition-Habitat',
-                                         'Storage-Level 3', 'Storage-Level 2', 'Road Stormproofing', 'Road Repair', 'Lake Habitat Improvement', 
-                                         'Dispersed Rec Site Improvement', 'Channel Reconstruction')) %>% 
+             filter(ACTIVITY_CODE %in% poly_unique$gpas_poly_unique_values) %>% 
               mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>% 
               mutate(ADMIN_ORG_NAME = str_to_title(ADMIN_ORG_NAME),
                      type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Roads', 
@@ -47,29 +48,19 @@ report_df_filt <- report_df %>%
 
 report_df_filt_line <- report_df_lines %>%
              filter(SPATIAL_SIZE >= 0) %>% 
-             filter(ACTIVITY_CODE %in% c('Crossing Improvement-Fish','Crossing Improvement-NonFish','AOP Improvement',
-                                          'Crossing Removal','AOP Improvement','AOP Barrier Removed-NonRoad',
-                                          'AOP Barrier Removed-Road','AOP Eliminate Fish Entrainment','AOP Improvement-Road',
-                                          'Streambank Stabilization', 'Channel Reconstruction', 'Riparian Native Plant Restore',
-                                          'Planting- Riparian', 'Increase Large Wood', 'Fencing-Riparian', 'Riparian Thinning',
-                                          'Decommission-Treatment Scale 1','Decommission-Treatment Scale 2', 'Decommission-Treatment Scale 3', 'Decommission-Treatment Scale 4',
-                                          'Decommission-Treatment Scale 5', 'Road Maintenance', 'Road Repair', 'Road Stormproofing',
-                                          'Road Realignment', 'Instream Flow Secured', 'Abandoned Mine Land Reclamation', 'Wetland Restoration',
-                                         'Trail Stormproofing', 'Trail Realignment', 'Structure Removal', 'Structure Addition-Habitat',
-                                         'Storage-Level 3', 'Storage-Level 2', 'Road Stormproofing', 'Road Repair', 'Lake Habitat Improvement', 
-                                         'Dispersed Rec Site Improvement', 'Channel Reconstruction')) %>% 
+             filter(ACTIVITY_CODE %in% line_unique$gpas_line_unique_values_but_filtered) %>% 
               mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>% 
               mutate(ADMIN_ORG_NAME = str_to_title(ADMIN_ORG_NAME),
                      type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Roads', 
                                                  if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Instream', 'Other')))
 
-g1 <- report_df_filt %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
+g1 <- report_df_filt_poly %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
   resourceviz::custom_theme(font_family = 'special', font_size = 9.5) + 
   colorblindr::scale_fill_OkabeIto() +
   labs(y = '', x = 'Area (acres)', fill = 'National Forest')+
   theme(legend.position = 'right')
 
-ggsave('g1.png',g1, device = 'png', path = 'Z:/GIT/reporting/inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+ggsave('g1.png',g1, device = 'png', path = 'inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
 
 g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
   resourceviz::custom_theme(font_family = 'special', font_size = 9.5) + 
@@ -77,12 +68,34 @@ g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE
   labs(y = '', x = 'Distance (miles)', fill = 'National Forest')+
   theme(legend.position = 'right')
 
-ggsave('g2.png', g2, device = 'png', path = 'Z:/GIT/reporting/inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+ggsave('g2.png', g2, device = 'png', path = 'inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+
+
+poly_act_summary <- report_df_filt_poly %>% 
+  group_by(ACTIVITY_CODE) %>% 
+  dplyr::summarise(total_acres = sum(SPATIAL_SIZE, na.rm = T)) %>% 
+  mutate(type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Road Related', 
+                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Stream & Wetland Related', 'Other')))
+
+poly_act_summary_groups <- poly_act_summary %>% group_by(type_of_treatment) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = T))
+
+
+line_act_summary <- report_df_filt_line %>% 
+  group_by(ACTIVITY_CODE) %>% 
+  dplyr::summarise(total_acres = sum(SPATIAL_SIZE, na.rm = T)) %>% 
+  mutate(type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Road Related', 
+                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream'), 'Stream Related', 'Other')))
+
+line_act_summary_groups <- line_act_summary %>% group_by(type_of_treatment) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = T))
+
+
+
+
 
 ```
 
 # USDA Forest Service - Montana Units 
-# FY`r lubridate::year(Sys.Date())` Accomplishment Highlights
+# FY`r params$fiscal_year` Accomplishment Highlights
 
 ## Introduction  
 
@@ -101,43 +114,43 @@ The latest iteration of the Memorandum of Understanding (MOU) between the U.S. F
 
 The format and content of this report has been mutually agreed upon as a work in progress; each subsequent iteration of the report will be refined in effort to best meet the needs of both agencies.   
 
-For `r lubridate::year(Sys.Date())+1`, geospatial data has again been shared with MT DEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
+For `r params$fiscal_year`, geospatial data has again been shared with MT DEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
 
 In effort to improve transparency and communication with partners like MT DEQ, USFS Region 1 has been coordinating with Washington Office database managers to develop a publicly accessible dashboard for viewing selected soil, aquatic, and watershed restoration activities completed on National Forest System lands. The dashboard is currently in beta testing and is anticipated to be available in late spring or early summer 2023. The dashboard will be an ArcGIS Online platform that provides both mapped locations of selected activities coupled with tabular and graphical display of associated statistics and information.   
 
-This 2022 report provides a statewide snapshot of accomplishments in four reporting categories:  soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved.   Annual accomplishment reports from individual forests can be forwarded to MT DEQ where available.  
+This `r params$fiscal_year` report provides a statewide snapshot of accomplishments in four reporting categories:  soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved.   Annual accomplishment reports from individual forests can be forwarded to MT DEQ where available.  
 
 The 2021 Bipartisan Infrastructure Law (BIL) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. USFS Region 1 was the beneficiary of these programs, in particular the Legacy Roads and Trails program and Collaborative, Aquatic-Focused Landscape Restoration (CALR) program. Funding from these programs was made available late in Fiscal Year (FY) 2022, resulting in much of the funded work being deferred to Fiscal Year 2023.  Depending on the BIL program, Forests are actively working with the Regional Office on 2024, 2025, and in some cases 2026 proposals.  More information on BIL-related funding accomplishments will be provided to Montana DEQ during coordination meetings and in subsequent years’ reports.  
 
-Data included in this FY`r lubridate::year(Sys.Date())+1` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain the flexibility to decide which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
+Data included in this FY`r params$fiscal_year` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain the flexibility to decide which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
 
 Though efforts have been made to ensure equitable accounting of accomplishments, not every acre reported can be assumed to have the same level of landscape benefit or effect. As noted above, accomplishment reports from individual National Forests can further contextualize the scope of work completed.  
 
 ## Soil and Water Acres Improved  
 
-Figure 1 shows selected soil and water resource acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration ranging from channel reconstruction and streambank stabilization to road obliteration. Road and trail improvements highlighted many of the forests’ programs of work; Montana Forests realigned, decommissioned, stored, stormproofed, and repaired greater than 200 acres of road and trail prisms across the state. Additionally, on the order of 50 acres of wetland restoration and crossing reconstruction occurred across three National Forests in Montana during FY2022.
+Figure 1 shows selected soil and water resource acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration ranging from channel reconstruction and streambank stabilization to road obliteration. Road and trail improvements highlighted many of the forests’ programs of work; Montana Forests realigned, decommissioned, stored, stormproofed, and repaired greater than 200 acres of road and trail prisms across the state. Additionally, on the order of 50 acres of wetland restoration and crossing reconstruction occurred across three National Forests in Montana during FY`r params$fiscal_year`.
 
 ## Stream Miles Improved/Linear Feature Restoration Activities  
 
-Figure 2 provides a statewide snapshot of stream miles improved through various restoration activities. As an illustrative example, total miles of road decommissioned should be interpreted as miles of stream habitat benefitting from road decommissioning, not the total mileage of roads decommissioned.  
+Figure 2 provides a statewide snapshot of stream miles improved through various restoration activities. As an illustrative example, total miles of road decommissioned should be interpreted as miles of stream habitat benefiting from road decommissioning, not the total mileage of roads decommissioned.  
 
 Road-stream crossing improvement efforts occurred across multiple Montana Forests in FY2022.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than 25 miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately 15 miles of habitat available for native species.  Nearly forty miles of stream habitat conditions were restored via nonnative fish removal and native fish reintroduction. Two national forests secured instream flow water rights protecting baseflows for aquatic habitat across roughly 20 miles of streams.  
 
-##### ![](Z:/GIT/reporting/inst/app/www/images/g1.png)
+##### ![](inst/app/www/images/g1.png)
 
-###### Figure 1. Selected soil, water, and aquatic habitat improvement activities completed by USFS Montana Forests during Fiscal Year 2022. 
+###### Figure 1. Selected soil, water, and aquatic habitat improvement activities completed by USFS Montana Forests during Fiscal Year `r params$fiscal_year`. 
 
 
-##### ![](Z:/GIT/reporting/inst/app/www/images/g2.png)
+##### ![](inst/app/www/images/g2.png)
 
-###### Figure 2. Miles of stream habitat improvement or road miles restored by Montana forests in Fiscal Year 2022. 
+###### Figure 2. Miles of stream habitat improvement or road miles restored by Montana forests in Fiscal Year `r params$fiscal_year`. 
 
 ## Best Management Practice (BMP) Monitoring  
 
 The Forest Service’s National Core Best Management Practice (BMP) program was initiated in 2012. The intent of this program is to improve water quality management through consistent and effective application of BMPs associated with management activities conducted on NFS lands. In doing so, this program provides important tools to help ensure Forest Service management activities comply with the Clean Water Act. Prior to development of the national program, BMP planning and implementation was directed by overlapping state-specific guidance and individual forest and regional policies and protocols. The National Core BMP program provides a standardized set of core BMPs for avoiding or mitigating effects to soil and water resources associated the range of management activities. In addition to the core BMPs, it provides a series of systematic monitoring protocols for virtually all management activities conducted on NFS lands (USDA Forest Service 2012). 
 The Forest Service’s BMP monitoring program is administered on a biennial basis; Montana forests completed 42 BMP reviews during the FY2021-2022 monitoring timeframe. Difficulties with field meetings due to COVID and workloads associated with the Bipartisan Infrastructure Law (BIL) project implementation hampered the ability to conduct more reviews. BMP reviews included both implementation and effectiveness ratings. A composite rating is assigned based on the matrix shown in Figure 3.
 
-##### ![](Z:/GIT/reporting/inst/app/www/images/bmp_matrix.png)    
+##### ![](inst/app/www/images/bmp_matrix.png)    
 
 ###### Figure 3. Composite scoring matrix for BMP implementation and effectiveness reviews under that Forest Service’s National Core BMP Monitoring Program.  
 <br>
