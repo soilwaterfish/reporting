@@ -65,7 +65,7 @@ g1 <- report_df_filt_poly %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE
 ggsave('g1.png',g1, device = 'png', path = system.file('app/www/images', 'g1.png', package = 'reporting'), width = 6.09, height = 5.11, units = 'in', dpi = 1600)
 
 g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
-  resourceviz::custom_theme(font_family = 'special', font_size = 9.5) + 
+  custom_theme(font_family = 'special', font_size = 9.5) + 
   colorblindr::scale_fill_OkabeIto() +
   labs(y = '', x = 'Distance (miles)', fill = 'National Forest')+
   theme(legend.position = 'right')
