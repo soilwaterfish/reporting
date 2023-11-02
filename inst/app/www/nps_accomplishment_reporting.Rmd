@@ -21,21 +21,23 @@ font_add_google("Open Sans", family = "special")
 showtext_auto()
 
 showtext_opts(dpi = 1600)
-# 
-# report_path <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\reporting.gdb}'
-# 
-# report_sf <- read_sf(report_path, layer = 'gPAS_PL_Filtered_MT_2022')
-# report_sf_lines <- read_sf(report_path, layer = 'gPAS_LN_Filtered_MT_2022')
-# report_df <- report_sf %>% st_drop_geometry()
-# report_df_lines <- report_sf_lines %>% st_drop_geometry()
 
-report_df_poly <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_poly.csv')
-report_df_lines <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_lines.csv')
+# get the most recent data from python script outputs
+report_path <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\reporting.gdb}'
+report_data <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\data\}'
+report_sf <- read_sf(report_path, layer = 'gPAS_PL_Filtered_MT_2022')
+report_sf_lines <- read_sf(report_path, layer = 'gPAS_LN_Filtered_MT_2022')
+report_df_poly <- report_sf %>% st_drop_geometry()
+report_df_lines <- report_sf_lines %>% st_drop_geometry()
 
-poly_unique <- readxl::read_xlsx(r'{Z:\GIT\reporting\data\gpas_unique_values.xlsx}',
+# report_df_poly <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_poly.csv')
+# report_df_lines <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_lines.csv')
+# 
+
+poly_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
                                  sheet = 'gpas_polygon_final_list')
 
-line_unique <- readxl::read_xlsx(r'{Z:\GIT\reporting\data\gpas_unique_values.xlsx}',
+line_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
                                  sheet = 'gpas_line_final_list')
 
 report_df_filt_poly <- report_df_poly %>%
@@ -60,7 +62,7 @@ g1 <- report_df_filt_poly %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE
   labs(y = '', x = 'Area (acres)', fill = 'National Forest')+
   theme(legend.position = 'right')
 
-ggsave('g1.png',g1, device = 'png', path = 'inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+ggsave('g1.png',g1, device = 'png', path = system.file('app/www/images', 'g1.png', package = 'reporting'), width = 6.09, height = 5.11, units = 'in', dpi = 1600)
 
 g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
   resourceviz::custom_theme(font_family = 'special', font_size = 9.5) + 
@@ -68,7 +70,7 @@ g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE
   labs(y = '', x = 'Distance (miles)', fill = 'National Forest')+
   theme(legend.position = 'right')
 
-ggsave('g2.png', g2, device = 'png', path = 'inst/app/www/images/', width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+ggsave('g2.png', g2, device = 'png', path = system.file('app/www/images', 'g2.png', package = 'reporting'), width = 6.09, height = 5.11, units = 'in', dpi = 1600)
 
 
 poly_act_summary <- report_df_filt_poly %>% 
@@ -87,10 +89,6 @@ line_act_summary <- report_df_filt_line %>%
                                                  if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream'), 'Stream Related', 'Other')))
 
 line_act_summary_groups <- line_act_summary %>% group_by(type_of_treatment) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = T))
-
-
-
-
 
 ```
 
@@ -136,12 +134,12 @@ Figure 2 provides a statewide snapshot of stream miles improved through various 
 
 Road-stream crossing improvement efforts occurred across multiple Montana Forests in FY2022.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than 25 miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately 15 miles of habitat available for native species.  Nearly forty miles of stream habitat conditions were restored via nonnative fish removal and native fish reintroduction. Two national forests secured instream flow water rights protecting baseflows for aquatic habitat across roughly 20 miles of streams.  
 
-##### ![](inst/app/www/images/g1.png)
+##### `r knitr::include_graphics(system.file('app/www/images', 'g1.png', package = 'reporting'))`
 
 ###### Figure 1. Selected soil, water, and aquatic habitat improvement activities completed by USFS Montana Forests during Fiscal Year `r params$fiscal_year`. 
 
 
-##### ![](inst/app/www/images/g2.png)
+##### `r knitr::include_graphics(system.file('app/www/images', 'g2.png', package = 'reporting'))`
 
 ###### Figure 2. Miles of stream habitat improvement or road miles restored by Montana forests in Fiscal Year `r params$fiscal_year`. 
 
@@ -150,7 +148,7 @@ Road-stream crossing improvement efforts occurred across multiple Montana Forest
 The Forest Service’s National Core Best Management Practice (BMP) program was initiated in 2012. The intent of this program is to improve water quality management through consistent and effective application of BMPs associated with management activities conducted on NFS lands. In doing so, this program provides important tools to help ensure Forest Service management activities comply with the Clean Water Act. Prior to development of the national program, BMP planning and implementation was directed by overlapping state-specific guidance and individual forest and regional policies and protocols. The National Core BMP program provides a standardized set of core BMPs for avoiding or mitigating effects to soil and water resources associated the range of management activities. In addition to the core BMPs, it provides a series of systematic monitoring protocols for virtually all management activities conducted on NFS lands (USDA Forest Service 2012). 
 The Forest Service’s BMP monitoring program is administered on a biennial basis; Montana forests completed 42 BMP reviews during the FY2021-2022 monitoring timeframe. Difficulties with field meetings due to COVID and workloads associated with the Bipartisan Infrastructure Law (BIL) project implementation hampered the ability to conduct more reviews. BMP reviews included both implementation and effectiveness ratings. A composite rating is assigned based on the matrix shown in Figure 3.
 
-##### ![](inst/app/www/images/bmp_matrix.png)    
+##### `r knitr::include_graphics(system.file('app/www/images', 'bmp_matrix.png', package = 'reporting'))`  
 
 ###### Figure 3. Composite scoring matrix for BMP implementation and effectiveness reviews under that Forest Service’s National Core BMP Monitoring Program.  
 <br>
