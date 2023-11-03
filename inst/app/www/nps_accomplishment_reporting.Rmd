@@ -1,10 +1,9 @@
 ---
 title: ""
 output:
-  word_document:
-    reference_docx: "word_template.docx"
+  word_document
 params:
-  fiscal_year: "2023"
+  fiscal_year: ""
 ---
 
 ```{r setup, include=FALSE}

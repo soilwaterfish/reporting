@@ -8,8 +8,6 @@
 #' @param rel_large
 #' @param color
 #'
-#' @return
-#' @export
 #' @importFrom ggtext element_markdown element_textbox
 #' @importFrom ggplot2 element_blank element_rect element_line element_text margin theme unit rel '%+replace%'
 #'
