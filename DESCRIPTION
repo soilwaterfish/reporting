@@ -9,7 +9,6 @@ Imports:
     dplyr,
     crayon,
     showtext,
-    colorblindr,
     ggtext,
     httr,
     purrr,
@@ -19,7 +18,8 @@ Imports:
     tidyr,
     sf,
     ggplot2,
-    readxl
+    readxl,
+    reticulate
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3

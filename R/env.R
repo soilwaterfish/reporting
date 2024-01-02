@@ -4,4 +4,4 @@
 #' @return An environment
 #'
 
-pyfn_env <- rlang::env()
+#pyfn_env <- rlang::env()

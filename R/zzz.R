@@ -1,13 +1,17 @@
 # .onLoad <- function(libname, pkgname){
 #
-#   py_path <- r'{C:\Program Files\ArcGIS\Pro\bin\Python\envs\arcgispro-py3\python.exe}'
+#   if (!reticulate::py_module_available("arcpy")) {
 #
-#   if(reticulate::py_exe() == py_path){stop('Need to have ....')}
+#     message('Need to have arcpy within Python environment')
+#
+#   } else {
 #
 #   reticulate::source_python(
 #     system.file("gpas.py", package = "reporting"),
 #     envir = pyfn_env
 #   )
 #
+#   }
 #
 # }
+

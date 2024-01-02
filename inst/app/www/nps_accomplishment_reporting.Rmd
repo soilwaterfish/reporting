@@ -4,6 +4,8 @@ output:
   word_document
 params:
   fiscal_year: ""
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -24,8 +26,8 @@ showtext_opts(dpi = 1600)
 # get the most recent data from python script outputs
 report_path <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\reporting.gdb}'
 report_data <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\data\}'
-report_sf <- read_sf(report_path, layer = 'gPAS_PL_Filtered_MT_2022')
-report_sf_lines <- read_sf(report_path, layer = 'gPAS_LN_Filtered_MT_2022')
+report_sf <- read_sf(report_path, layer = 'gPAS_PL_Filtered_MT_2023')
+report_sf_lines <- read_sf(report_path, layer = 'gPAS_LN_Filtered_MT_2023')
 report_df_poly <- report_sf %>% st_drop_geometry()
 report_df_lines <- report_sf_lines %>% st_drop_geometry()
 
@@ -34,7 +36,7 @@ report_df_lines <- report_sf_lines %>% st_drop_geometry()
 # 
 
 poly_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
-                                 sheet = 'gpas_polygon_final_list')
+                                 sheet = 'gpas_polygon_final_list') 
 
 line_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
                                  sheet = 'gpas_line_final_list')
@@ -42,52 +44,93 @@ line_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx')
 report_df_filt_poly <- report_df_poly %>%
              filter(SPATIAL_SIZE >= 0) %>% 
              filter(ACTIVITY_CODE %in% poly_unique$gpas_poly_unique_values) %>% 
-              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>% 
-              mutate(ADMIN_ORG_NAME = str_to_title(ADMIN_ORG_NAME),
-                     type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Roads', 
-                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Instream', 'Other')))
+             left_join(poly_unique, by = c('ACTIVITY_CODE' = 'gpas_poly_unique_values')) %>% 
+              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x)))%>%
+  mutate(
+    activity_type_category = tools::toTitleCase(activity_type_category),
+    activity_type_category = factor(activity_type_category, 
+                                         levels = tools::toTitleCase(c("channel, streambank, or floodplain restoration", "fish or aquatic habitat connectivity treatment",         
+                                         "invasive species management", "mine reclamation",                                       
+                                         "riparian, wetland, or spring maintenance or restoration", "road or trail decommissioning",
+                                         "road or trail repair, maintenance, or impact reduction", "other" ))))
 
 report_df_filt_line <- report_df_lines %>%
              filter(SPATIAL_SIZE >= 0) %>% 
              filter(ACTIVITY_CODE %in% line_unique$gpas_line_unique_values_but_filtered) %>% 
-              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>% 
-              mutate(ADMIN_ORG_NAME = str_to_title(ADMIN_ORG_NAME),
-                     type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Roads', 
-                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Instream', 'Other')))
+              left_join(line_unique, by = c('ACTIVITY_CODE' = 'gpas_line_unique_values_but_filtered')) %>%
+              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>%
+              mutate(
+    activity_type_category = tools::toTitleCase(activity_type_category),
+    activity_type_category = factor(activity_type_category, 
+                                         levels = tools::toTitleCase(c("channel, streambank, or floodplain restoration", "fish or aquatic habitat connectivity treatment",         
+                                         "invasive species management", "mine reclamation",                                       
+                                         "riparian, wetland, or spring maintenance or restoration", "road or trail decommissioning",
+                                         "road or trail repair, maintenance, or impact reduction", "other" ))))
 
-g1 <- report_df_filt_poly %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
-  custom_theme(font_family = 'special', font_size = 9.5) + 
-  colorblindr::scale_fill_OkabeIto() +
-  labs(y = '', x = 'Area (acres)', fill = 'National Forest')+
-  theme(legend.position = 'right')
+myColors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
+names(myColors) <- c("BEAVERHEAD-DEERLODGE","BITTERROOT", "CUSTER GALLATIN","FLATHEAD",  "HELENA - LEWIS AND CLARK", "KOOTENAI", "LOLO")
 
-ggsave('g1.png',g1, device = 'png', path = system.file('app/www/images', 'g1.png', package = 'reporting'), width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+g1 <- report_df_filt_poly %>% 
+  ggplot(aes(SPATIAL_SIZE,ACTIVITY_CODE)) +
+  geom_col(aes(fill = ADMIN_ORG_NAME),
+           show.legend = T, width = .5) +
+  custom_theme(font_family = 'special', font_size = 6) + 
+  scale_x_continuous(labels = scales::comma) + 
+  scale_fill_manual(values = myColors) +
+  labs(y = '', x = 'Area (acres)', fill = 'National Forest') +
+  theme(legend.position = 'right',
+        strip.text = element_text(size = 4),
+        strip.background = element_rect(fill = 'white', color = 'black')
+        ) +
+  facet_wrap(~activity_type_category, scale = 'free', ncol = 2)
 
-g2 <- report_df_filt_line %>% ggplot() + geom_col(aes(SPATIAL_SIZE,ACTIVITY_CODE,  fill = ADMIN_ORG_NAME), show.legend = T) +
-  custom_theme(font_family = 'special', font_size = 9.5) + 
-  colorblindr::scale_fill_OkabeIto() +
-  labs(y = '', x = 'Distance (miles)', fill = 'National Forest')+
-  theme(legend.position = 'right')
+ggsave('g1.png',g1, device = 'png', path = system.file('app/www/images',package = 'reporting'), width = 6.9, height = 5.9, units = 'in', dpi = 1600)
 
-ggsave('g2.png', g2, device = 'png', path = system.file('app/www/images', 'g2.png', package = 'reporting'), width = 6.09, height = 5.11, units = 'in', dpi = 1600)
+g2 <- report_df_filt_line  %>% 
+  ggplot(aes(SPATIAL_SIZE,ACTIVITY_CODE)) +
+  geom_col(aes(fill = ADMIN_ORG_NAME),
+           show.legend = T, width = .5) +
+  custom_theme(font_family = 'special', font_size = 6) + 
+  scale_x_continuous(labels = scales::comma) + 
+  scale_fill_manual(values = myColors)  +
+  labs(y = '', x = 'Length (Miles)', fill = 'National Forest') +
+  theme(legend.position = 'right',
+        strip.text = element_text(size = 4),
+        strip.background = element_rect(fill = 'white', color = 'black')
+        ) +
+  facet_wrap(~activity_type_category, scale = 'free', ncol = 2)
+
+ggsave('g2.png', g2, device = 'png', path = system.file('app/www/images', package = 'reporting'), width = 6.9, height = 5.9, units = 'in', dpi = 1600)
 
 
 poly_act_summary <- report_df_filt_poly %>% 
-  group_by(ACTIVITY_CODE) %>% 
+  group_by(ACTIVITY_CODE, activity_type_category) %>% 
   dplyr::summarise(total_acres = sum(SPATIAL_SIZE, na.rm = T)) %>% 
-  mutate(type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Road Related', 
-                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream|Wetland'), 'Stream & Wetland Related', 'Other')))
+  ungroup() 
 
-poly_act_summary_groups <- poly_act_summary %>% group_by(type_of_treatment) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = T))
+poly_act_summary_groups <- poly_act_summary %>% group_by(activity_type_category) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = TRUE)) %>% 
+  mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
+          acres_pct = round((sum_of_treatment/sum(sum_of_treatment))*100, 2),
+           rank = rank(sum_of_treatment, ties.method = 'first'))
 
 
 line_act_summary <- report_df_filt_line %>% 
-  group_by(ACTIVITY_CODE) %>% 
-  dplyr::summarise(total_acres = sum(SPATIAL_SIZE, na.rm = T)) %>% 
-  mutate(type_of_treatment = if_else(str_detect(ACTIVITY_CODE, 'Road|road|Decommission|Storage|Crossing|AOP|Structure'), 'Road Related', 
-                                                 if_else(str_detect(ACTIVITY_CODE, 'Riparian|riparian|Large Wood|Channel|Instream'), 'Stream Related', 'Other')))
+  group_by(ACTIVITY_CODE, activity_type_category) %>% 
+  dplyr::summarise(total_miles = sum(SPATIAL_SIZE, na.rm = T))
 
-line_act_summary_groups <- line_act_summary %>% group_by(type_of_treatment) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = T))
+line_act_summary_groups <- line_act_summary %>% group_by(activity_type_category) %>%  dplyr::summarise(sum_of_treatment = sum(total_miles, na.rm = TRUE)) %>% 
+  mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
+          miles_pct = round((sum_of_treatment/sum(sum_of_treatment))*100, 2),
+           rank = rank(sum_of_treatment, ties.method = 'first'))
+
+int_to_words <- function(x) {
+
+                   index <- as.integer(x) + 1
+                   words <- str_to_title(c('Zero', 'one', 'two', 'three', 'four',
+                              'five', 'six', 'seven', 'eight', 'nine',
+                              'ten'))
+                   words[index]
+}
 
 ```
 
@@ -113,11 +156,9 @@ The format and content of this report has been mutually agreed upon as a work in
 
 For `r params$fiscal_year`, geospatial data has again been shared with MT DEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
 
-In effort to improve transparency and communication with partners like MT DEQ, USFS Region 1 has been coordinating with Washington Office database managers to develop a publicly accessible dashboard for viewing selected soil, aquatic, and watershed restoration activities completed on National Forest System lands. The dashboard is currently in beta testing and is anticipated to be available in late spring or early summer 2023. The dashboard will be an ArcGIS Online platform that provides both mapped locations of selected activities coupled with tabular and graphical display of associated statistics and information.   
-
 This `r params$fiscal_year` report provides a statewide snapshot of accomplishments in four reporting categories:  soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved.   Annual accomplishment reports from individual forests can be forwarded to MT DEQ where available.  
 
-The 2021 Bipartisan Infrastructure Law (BIL) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. USFS Region 1 was the beneficiary of these programs, in particular the Legacy Roads and Trails program and Collaborative, Aquatic-Focused Landscape Restoration (CALR) program. Funding from these programs was made available late in Fiscal Year (FY) 2022, resulting in much of the funded work being deferred to Fiscal Year 2023.  Depending on the BIL program, Forests are actively working with the Regional Office on 2024, 2025, and in some cases 2026 proposals.  More information on BIL-related funding accomplishments will be provided to Montana DEQ during coordination meetings and in subsequent years’ reports.  
+The 2021 Bipartisan Infrastructure Law (BIL) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. USFS Region 1 has been the beneficiary of these programs, in particular the Legacy Roads and Trails program and Collaborative, Aquatic-Focused Landscape Restoration (CALR) program. Forests are actively working on implementation of projects associatted with these programs and have a variety of outyear BIL and/or IRA-funded projects already approved. More information on BIL-related funding accomplishments will be provided to Montana DEQ during coordination meetings and in subsequent years’ reports.  
 
 Data included in this FY`r params$fiscal_year` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain the flexibility to decide which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
 
@@ -125,13 +166,29 @@ Though efforts have been made to ensure equitable accounting of accomplishments,
 
 ## Soil and Water Acres Improved  
 
-Figure 1 shows selected soil and water resource acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration ranging from channel reconstruction and streambank stabilization to road obliteration. Road and trail improvements highlighted many of the forests’ programs of work; Montana Forests realigned, decommissioned, stored, stormproofed, and repaired greater than 200 acres of road and trail prisms across the state. Additionally, on the order of 50 acres of wetland restoration and crossing reconstruction occurred across three National Forests in Montana during FY`r params$fiscal_year`.
+Figure 1 shows selected soil, water, and aquatic habitat project activities accounted for as acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration across seven general categories (Figure 1.).  
+
+Montana units completed `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(sum_of_treatment) %>%  prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(activity_type_category)`, accounting for `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(acres_pct) %>%  prettyNum(big.mark=",",scientific=FALSE)` percent of all acres improved, followed by `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(sum_of_treatment) %>% round(0)  %>% prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(activity_type_category)` (`r poly_act_summary_groups %>% filter(rank == 7) %>% pull(acres_pct) %>% prettyNum(big.mark=",",scientific=FALSE)` percent). Other notable project activities included in [X, Y, Z]. Multiple forests completed `r report_df_filt_poly %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` in Fiscal Year `r params$fiscal_year`.   
+
 
 ## Stream Miles Improved/Linear Feature Restoration Activities  
 
 Figure 2 provides a statewide snapshot of stream miles improved through various restoration activities. As an illustrative example, total miles of road decommissioned should be interpreted as miles of stream habitat benefiting from road decommissioning, not the total mileage of roads decommissioned.  
 
-Road-stream crossing improvement efforts occurred across multiple Montana Forests in FY2022.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than 25 miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately 15 miles of habitat available for native species.  Nearly forty miles of stream habitat conditions were restored via nonnative fish removal and native fish reintroduction. Two national forests secured instream flow water rights protecting baseflows for aquatic habitat across roughly 20 miles of streams.  
+`r report_df_filt_line %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` occurred across multiple Montana Forests in FY`r params$fiscal_year`.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than `r report_df_filt_line %>% 
+  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
+  filter(ACTIVITY_CODE %in% c('AOP Improvement-Road', 'Crossing Improvement-Fish','AOP Eliminate Fish Entrainment',
+                              'AOP Barrier Removed-Non-Road', 'AOP Barrier Removed-Road ',     
+                              'AOP Fish Passage Structure' )) %>% 
+  pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately `r report_df_filt_line %>% 
+  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
+  filter(ACTIVITY_CODE %in% c('AOP Barrier Construction', 'AOP Barrier Removed-Non-Road')) %>% 
+  pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of habitat available for native species. `r report_df_filt_line %>% 
+  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
+  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() %>% int_to_words` national forest`r ifelse(report_df_filt_line %>% 
+  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
+  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() > 1, paste(s),'')` secured instream flow water rights protecting baseflows for aquatic habitat across roughly `r report_df_filt_line %>% 
+  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of streams.  
 
 ##### `r knitr::include_graphics(system.file('app/www/images', 'g1.png', package = 'reporting'))`
 
