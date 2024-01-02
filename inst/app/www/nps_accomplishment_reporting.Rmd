@@ -110,7 +110,7 @@ poly_act_summary <- report_df_filt_poly %>%
 
 poly_act_summary_groups <- poly_act_summary %>% group_by(activity_type_category) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = TRUE)) %>% 
   mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
-          acres_pct = round((sum_of_treatment/sum(sum_of_treatment))*100, 2),
+          acres_pct = round((sum_of_treatment/sum(sum_of_treatment))*100),
            rank = rank(sum_of_treatment, ties.method = 'first'))
 
 
@@ -120,7 +120,7 @@ line_act_summary <- report_df_filt_line %>%
 
 line_act_summary_groups <- line_act_summary %>% group_by(activity_type_category) %>%  dplyr::summarise(sum_of_treatment = sum(total_miles, na.rm = TRUE)) %>% 
   mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
-          miles_pct = round((sum_of_treatment/sum(sum_of_treatment))*100, 2),
+          miles_pct = round((sum_of_treatment/sum(sum_of_treatment))*100),
            rank = rank(sum_of_treatment, ties.method = 'first'))
 
 int_to_words <- function(x) {
@@ -180,15 +180,15 @@ Figure 2 provides a statewide snapshot of stream miles improved through various 
   filter(ACTIVITY_CODE %in% c('AOP Improvement-Road', 'Crossing Improvement-Fish','AOP Eliminate Fish Entrainment',
                               'AOP Barrier Removed-Non-Road', 'AOP Barrier Removed-Road ',     
                               'AOP Fish Passage Structure' )) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately `r report_df_filt_line %>% 
+  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately `r report_df_filt_line %>% 
   filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
   filter(ACTIVITY_CODE %in% c('AOP Barrier Construction', 'AOP Barrier Removed-Non-Road')) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of habitat available for native species. `r report_df_filt_line %>% 
+  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of habitat available for native species. `r report_df_filt_line %>% 
   filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
   group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() %>% int_to_words` national forest`r ifelse(report_df_filt_line %>% 
   filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
   group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() > 1, paste(s),'')` secured instream flow water rights protecting baseflows for aquatic habitat across roughly `r report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% pull(SPATIAL_SIZE) %>% sum() %>% round(2)` miles of streams.  
+  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of streams.  
 
 ##### `r knitr::include_graphics(system.file('app/www/images', 'g1.png', package = 'reporting'))`
 
