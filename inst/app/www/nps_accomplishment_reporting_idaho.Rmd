@@ -31,8 +31,8 @@ report_sf_lines <- read_sf(report_path, layer = paste0('gPAS_LN_Filtered_ID_INT_
 report_df_poly <- report_sf %>% st_drop_geometry()
 report_df_lines <- report_sf_lines %>% st_drop_geometry()
 
-write_csv(report_df_lines %>% st_drop_geometry(), paste0('inst/gPAS_LN_Filtered_ID_INT_', params$fiscal_year,'.csv'))
-write_csv(report_df_poly %>% st_drop_geometry(), paste0('inst/gPAS_PL_Filtered_ID_INT_', params$fiscal_year,'.csv'))
+# write_csv(report_df_lines %>% st_drop_geometry(), paste0('inst/gPAS_LN_Filtered_ID_INT_', params$fiscal_year,'.csv'))
+# write_csv(report_df_poly %>% st_drop_geometry(), paste0('inst/gPAS_PL_Filtered_ID_INT_', params$fiscal_year,'.csv'))
 
 # report_df_poly <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_poly.csv')
 # report_df_lines <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_lines.csv')
@@ -52,10 +52,18 @@ report_df_filt_poly <- report_df_poly %>%
   mutate(
     activity_type_category = tools::toTitleCase(activity_type_category),
     activity_type_category = factor(activity_type_category, 
-                                         levels = tools::toTitleCase(c("channel, streambank, or floodplain restoration", "fish or aquatic habitat connectivity treatment",         
-                                         "invasive species management", "mine reclamation",                                       
-                                         "riparian, wetland, or spring maintenance or restoration", "road or trail decommissioning",
-                                         "road or trail repair, maintenance, or impact reduction", "other" ))))
+                                         levels = tools::toTitleCase(
+                                       c("aquatic habitat restoration",
+                                         "channel, streambank, or floodplain restoration",
+                                         "fish or aquatic habitat connectivity treatment",         
+                                         "invasive species management",
+                                         "lake habitat improvement",
+                                         "mine reclamation",                                       
+                                         "riparian, wetland, or spring maintenance or restoration",
+                                         "road or trail decommissioning",
+                                         "road or trail repair, maintenance, or impact reduction",
+                                         "other" )
+                                       )))
 
 report_df_filt_line <- report_df_lines %>%
              filter(SPATIAL_SIZE >= 0) %>% 
@@ -71,7 +79,7 @@ report_df_filt_line <- report_df_lines %>%
                                          "road or trail repair, maintenance, or impact reduction", "other" ))))
 
 myColors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
-names(myColors) <- c("BEAVERHEAD-DEERLODGE","BITTERROOT", "CUSTER GALLATIN","FLATHEAD",  "HELENA - LEWIS AND CLARK", "KOOTENAI", "LOLO")
+names(myColors) <- sort(c("SALMON-CHALLIS", "CARIBOU-TARGHEE", "BOISE" ,"NEZPERCE - CLEARWATER", "SAWTOOTH","PAYETTE", "IDAHO PANHANDLE" ))
 
 g1 <- report_df_filt_poly %>% 
   ggplot(aes(SPATIAL_SIZE,ACTIVITY_CODE)) +
@@ -125,6 +133,10 @@ line_act_summary_groups <- line_act_summary %>% group_by(activity_type_category)
   mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
           miles_pct = round((sum_of_treatment/sum(sum_of_treatment))*100),
            rank = rank(sum_of_treatment, ties.method = 'first'))
+
+
+max_poly_rank <- poly_act_summary_groups %>% pull(rank) %>% max()
+max_line_rank <- line_act_summary_groups %>% pull(rank) %>% max()
 
 int_to_words <- function(x) {
 
@@ -142,54 +154,39 @@ int_to_words <- function(x) {
 
 ## Introduction  
 
-The latest iteration of the Memorandum of Understanding (MOU) between the U.S. Forest Service (USFS) in Idaho and the Idaho Department of Environmental Quality (ID DEQ) was signed in early 2020 as a five-year update to the longstanding MOU. Among those notable changes to the MOU was addition of Section IV (J), which states:  
+The latest iteration of the Memorandum of Understanding (MOU) between the U.S. Forest Service (USFS) in Idaho and the Idaho Department of Environmental Quality (MT DEQ) was signed in early 2020 as a five-year update to the longstanding MOU. Section IV (E) of the MOU states:  
 
-|               IV. The Forest Service shall:  
+|                   IV. The Forest Service and BLM shall:  
 
 	    
-|                             J. Provide DEQ with the annual U.S. Forest Service accomplishment report for activities
-|                             on NFS lands in Montana. Production of this annual accomplishment report would be
-|                             coordinated by the FS R1 regional hydrologist. Report contents would be drawn
-|                             primarily from the U.S. Forest Service’s Watershed Improvement Tracking (WIT)
-|                             database and would include all regional soil and water resource improvement activities
-|                             that occurred during the previous federal fiscal year.   
+|                             E. As requested, provide IDEQ water quality/Best Management Practice monitoring 
+|                             plans, results of BMP effectiveness determinations and any other information necessary 
+|                             to meet the intent of Idaho’s Water Quality Management Program and Antidegradation 
+|                             Policy.
             
 
-For `r params$fiscal_year`, geospatial data has again been shared with IDEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
+For `r params$fiscal_year`, geospatial data has been shared with IDEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
 
-This `r params$fiscal_year` report provides a statewide snapshot of accomplishments in four reporting categories:  soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved.   Annual accomplishment reports from individual forests can be forwarded to MT DEQ where available.  
+This `r params$fiscal_year` provides a statewide snapshot of accomplishments in four reporting categories: soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved. Annual accomplishment reports from individual forests can be forwarded to IDEQ where available.  
 
-The 2021 Bipartisan Infrastructure Law (BIL) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. USFS Region 1 has been the beneficiary of these programs, in particular the Legacy Roads and Trails program and Collaborative, Aquatic-Focused Landscape Restoration (CALR) program. Forests are actively working on implementation of projects associatted with these programs and have a variety of outyear BIL and/or IRA-funded projects already approved. More information on BIL-related funding accomplishments will be provided to Montana DEQ during coordination meetings and in subsequent years’ reports.  
+The 2021 Bipartisan Infrastructure Law (BIL) and 2022 Inflation Reduction Act (IRA) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. Idaho National Forests has been the beneficiary of these programs, in particular the Legacy Roads and Trails program, the Collaborative, Aquatic-Focused Landscape Restoration (CALR) program, and the IRA Source Water Protection Program. Forests are actively working on implementation of projects associated with these programs and have a variety of outyear BIL and/or IRA-funded projects already approved. More information on BIL- and IRA-related funding accomplishments will be provided to IDEQ during coordination meetings and in subsequent years’ reports.   
 
-Data included in this FY`r params$fiscal_year` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain the flexibility to decide which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
+Data included in this FY`r params$fiscal_year` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain some discretion as to which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
 
 Though efforts have been made to ensure equitable accounting of accomplishments, not every acre reported can be assumed to have the same level of landscape benefit or effect. As noted above, accomplishment reports from individual National Forests can further contextualize the scope of work completed.  
 
 ## Soil and Water Acres Improved  
 
-Figure 1 shows selected soil, water, and aquatic habitat project activities accounted for as acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration across seven general categories (Figure 1.).  
+Figure 1 shows selected soil, water, and aquatic habitat project activities accounted for as acres improved on USFS managed lands in Idaho. USFS Idaho Forests performed a variety of activities in service of watershed restoration across seven general categories (Figure 1.).  
 
-Montana units completed `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(sum_of_treatment) %>%  prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(activity_type_category)`, accounting for `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(acres_pct) %>%  prettyNum(big.mark=",",scientific=FALSE)` percent of all acres improved, followed by `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(sum_of_treatment) %>% round(0)  %>% prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(activity_type_category)` (`r poly_act_summary_groups %>% filter(rank == 7) %>% pull(acres_pct) %>% prettyNum(big.mark=",",scientific=FALSE)` percent). Other notable project activities included in [X, Y, Z]. Multiple forests completed `r report_df_filt_poly %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` in Fiscal Year `r params$fiscal_year`.   
-
+Idaho National Forests completed approximately `r poly_act_summary_groups %>% pull(sum_of_treatment) %>% sum() %>% round() %>%  prettyNum(big.mark=",",scientific=FALSE)` acres of soil, water, and aquatic habitat improvement activities in `r params$fiscal_year`. Highlights of this work included `r poly_act_summary_groups %>% filter(rank == max_poly_rank) %>% pull(sum_of_treatment) %>%  round() %>% prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == max_poly_rank) %>% pull(activity_type_category) %>%  tolower() %>% prettyNum(big.mark=",",scientific=FALSE)`, accounting for `r poly_act_summary_groups %>% filter(rank == max_poly_rank) %>% pull(acres_pct) %>% round() %>%  prettyNum(big.mark=",",scientific=FALSE)` percent of all acres improved. Other notable project activities included `r poly_act_summary_groups %>% filter(rank == max_poly_rank-1) %>% pull(activity_type_category) %>%  tolower() %>% prettyNum(big.mark=",",scientific=FALSE)`, `r poly_act_summary_groups %>% filter(rank == max_poly_rank-2) %>% pull(activity_type_category) %>%  tolower() %>% prettyNum(big.mark=",",scientific=FALSE)`, and `r poly_act_summary_groups %>% filter(rank == max_poly_rank-3) %>% pull(activity_type_category) %>%  tolower() %>% prettyNum(big.mark=",",scientific=FALSE)`. Multiple forests completed fish or aquatic habitat connectivity treatment, road or trail decommissioning, road or trail repair, maintenance, or impact reduction in Fiscal Year 2023.  
 
 ## Stream Miles Improved/Linear Feature Restoration Activities  
 
 Figure 2 provides a statewide snapshot of stream miles improved through various restoration activities. As an illustrative example, total miles of road decommissioned should be interpreted as miles of stream habitat benefiting from road decommissioning, not the total mileage of roads decommissioned.  
 
-`r report_df_filt_line %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` occurred across multiple Montana Forests in FY`r params$fiscal_year`.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than `r report_df_filt_line %>% 
-  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
-  filter(ACTIVITY_CODE %in% c('AOP Improvement-Road', 'Crossing Improvement-Fish','AOP Eliminate Fish Entrainment',
-                              'AOP Barrier Removed-Non-Road', 'AOP Barrier Removed-Road ',     
-                              'AOP Fish Passage Structure' )) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately `r report_df_filt_line %>% 
-  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
-  filter(ACTIVITY_CODE %in% c('AOP Barrier Construction', 'AOP Barrier Removed-Non-Road')) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of habitat available for native species. `r report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
-  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() %>% int_to_words` national forest`r ifelse(report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
-  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() > 1, paste(s),'')` secured instream flow water rights protecting baseflows for aquatic habitat across roughly `r report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of streams.  
+
+`r line_act_summary_groups %>% pull(sum_of_treatment) %>% sum() %>% round() %>%  prettyNum(big.mark=",",scientific=FALSE)` miles of streams were maintained or improved across Idaho National Forests in FY2023. `r line_act_summary_groups %>% filter(rank == max_line_rank) %>% pull(activity_type_category) %>%  prettyNum(big.mark=",",scientific=FALSE)` contributed to nearly `r line_act_summary_groups %>% filter(rank == max_line_rank) %>% pull(sum_of_treatment) %>% round() %>%  prettyNum(big.mark=",",scientific=FALSE)` miles of stream habitat improvement across the state, followed by `r line_act_summary_groups %>% filter(rank == max_line_rank-1) %>% pull(activity_type_category) %>%  prettyNum(big.mark=",",scientific=FALSE)` and `r line_act_summary_groups %>% filter(rank == max_line_rank-2) %>% pull(activity_type_category) %>%  prettyNum(big.mark=",",scientific=FALSE)`. Rounding out the stream miles improved portfolio, approximately `r line_act_summary_groups %>% filter(rank == max_line_rank-3) %>% pull(sum_of_treatment) %>% round() %>%  prettyNum(big.mark=",",scientific=FALSE)`  miles of `r line_act_summary_groups %>% filter(rank == max_line_rank-3) %>% pull(activity_type_category) %>%  prettyNum(big.mark=",",scientific=FALSE)` were completed.  
 
 ##### `r knitr::include_graphics(system.file('app/www/images', 'g1.png', package = 'reporting'))`
 
@@ -202,289 +199,22 @@ Figure 2 provides a statewide snapshot of stream miles improved through various 
 
 ## Best Management Practice (BMP) Monitoring  
 
-The Forest Service’s National Core Best Management Practice (BMP) program was initiated in 2012. The intent of this program is to improve water quality management through consistent and effective application of BMPs associated with management activities conducted on NFS lands. In doing so, this program provides important tools to help ensure Forest Service management activities comply with the Clean Water Act. Prior to development of the national program, BMP planning and implementation was directed by overlapping state-specific guidance and individual forest and regional policies and protocols. The National Core BMP program provides a standardized set of core BMPs for avoiding or mitigating effects to soil and water resources associated the range of management activities. In addition to the core BMPs, it provides a series of systematic monitoring protocols for virtually all management activities conducted on NFS lands (USDA Forest Service 2012). 
-The Forest Service’s BMP monitoring program is administered on a biennial basis; Montana forests completed 42 BMP reviews during the FY2021-2022 monitoring timeframe. Difficulties with field meetings due to COVID and workloads associated with the Bipartisan Infrastructure Law (BIL) project implementation hampered the ability to conduct more reviews. BMP reviews included both implementation and effectiveness ratings. A composite rating is assigned based on the matrix shown in Figure 3.
+The Forest Service’s National Core Best Management Practice (BMP) program was initiated in 2012 with the intent of improving water quality management through consistent and effective application of BMPs associated with management activities conducted on NFS lands. In doing so, this program provides important tools to help ensure Forest Service management activities comply with the Clean Water Act. Prior to development of the national program, BMP planning and implementation was directed by overlapping state-specific guidance and individual forest and regional policies and protocols. The National Core BMP program provides a standardized set of core BMPs for avoiding or mitigating effects to soil and water resources associated the range of management activities. In addition to the core BMPs, it provides a series of systematic monitoring protocols for virtually all management activities conducted on NFS lands (USDA Forest Service 2012).   
 
-##### `r knitr::include_graphics(system.file('app/www/images', 'bmp_matrix.png', package = 'reporting'))`  
-
-###### Figure 3. Composite scoring matrix for BMP implementation and effectiveness reviews under that Forest Service’s National Core BMP Monitoring Program.  
-<br>
-
-Roughly one quarter of the 42 reviews were roads-related, while the rest of the reviews were distributed across the spectrum of other resource areas reviewed (Figure 4). Twenty four of the 42 reviews (57 percent) had composite ratings of “Excellent” or “Good” and the remainder (43 Percent) had composite ratings of “Fair” or “Poor”. 
-
-In terms of results for specific resource categories, BMP reviews for Vegetation Management, Minerals, and Fire Management resulted in composite ratings of exclusively “Excellent” or “Good”. Most Facilities and Aquatic Ecosystem Improvement project reviews also resulted in “Excellent” or “Good” composite ratings. 
-
-In two resource categories (Roads and Recreation), greater than 50 percent of reviews resulted in “Fair” or “Poor” composite ratings. For roads, specific categories where concerns were identified included:  
-
-|           --	Road BMPs following construction or reconstruction,
-|           --	BMPs used to protect water/aquatic/riparian resources associated with long term management
-|               of open Forest Service (Maintenance level 2-5) roads, and
-|           --	BMPs used to protect water/aquatic/riparian resources associated with stored roads.  
-
-Review locations were both random and nonrandom; in at least one instance, a review was undertaken specifically to evaluate a road segment with known issues. Most of these road reviews with adverse findings were isolated geographically and corrective actions were undertaken following the BMP review.
-Five recreation reviews were conducted across the region in FY2021-2022. Recreation reviews resulting in “Poor” composite ratings included two reviews of construction or reconstruction projects at ski areas and a developed recreation site review. Corrective actions were undertaken following the site review. 
-
-Five reviews resulted in a composite rating of “No BMPs”. These ratings are a result of having no BMPs or nonpoint source pollution management plans tied to a specific management activity. In many cases, it is not typical to have specified BMP plans directly associated with certain management activities, such as dispersed recreation site management. In practice, abatement or restoration activities are undertaken whenever water quality concerns are identified. This deficiency in protocol structure has been shared with National Core BMP program administrators.
+Per Idaho DEQ’s request for a five-year compendium of National Core BMP reviews, a standalone report has been developed; see that report for further details.  
 
 ## Priority Watershed Conditions Improved  
 
-The Watershed Condition Framework (WCF) is the Forest Service’s nationally consistent approach to classifying and tracking watershed condition, identifying priority work locations, and carrying out essential project activities in effort to improve or maintain watershed conditions across NFS-managed lands. The Forest Service’s publicly accessible online Watershed Classification Interactive Map Viewer can be found at the following link: https://usfs.maps.arcgis.com/apps/MapSeries/index.html?appid=f4332e5b80c44874952b57e1db0b4407.  
+The Watershed Condition Framework (WCF) is the Forest Service’s nationally consistent approach to classifying and tracking watershed condition, identifying priority work locations, and carrying out essential project activities in effort to improve or maintain watershed conditions across NFS-managed lands (Potyondy and Geier 2011). The Forest Service’s publicly accessible online Watershed Classification Interactive Map Viewer can be found at the following link: https://usfs.maps.arcgis.com/apps/MapSeries/index.html?appid=f4332e5b80c44874952b57e1db0b4407.  
 
-Priority subwatershed (i.e. HUC12) designation is accompanied by development of a Watershed Restoration Action Plan (WRAP), which consists of a suite of designated “essential projects” designed to address restoration needs within the watershed. When all essential projects have been completed in an action plan, watershed condition is designated as improved in the database or record.  Completion of all essential projects in a WRAP requires substantive funding and often takes many years to complete. Monitoring is conducted to evaluate longer-term efficacy of restoration efforts.   
+Priority subwatershed (i.e. HUC12) designation is accompanied by development of a Watershed Restoration Action Plan (WRAP), which consists of a suite of designated “essential projects” designed to address restoration needs within the watershed. When all essential projects have been completed in an action plan, watershed condition is designated as improved in the database or record. Completion of all essential projects in a WRAP requires substantive funding and often takes many years to complete. Monitoring is conducted to evaluate longer-term efficacy of restoration efforts.  
 
-The Northern Region did not complete any Watershed Restoration Action Plans (WRAPs) in designated priority watersheds in FY2022. The region, including Montana national forests, has been consistently completing one or two WRAPs every fiscal year for the last few years. In FY2022, funding sources and essential project activities did not align (i.e. projects were completed in non-WRAP watersheds).. Essential project work across multiple units is ongoing or slated to be completed in Fiscal Year 2023, which  will result in completion of WRAPs in as many as three priority watersheds. Additionally, multiple new priority watershed designations and developed WRAPs are anticipated in FY2023.
+The Northern Region did not complete any WRAPs in designated priority watersheds in FY2023. The region, including Montana National Forests, has been consistently completing one or two WRAPs every fiscal year for the last few years. As a result of a change in Washington Office direction regarding accomplishment reporting (i.e. report the date work is completed on the ground v. contracted date) and some permitting-related implementation delays, two priority watersheds anticipated for completion in FY2023 will not be counted as accomplished until FY2024. The Northern Region anticipates contributing to the national target over the next few years via completion of a series of WRAPs funded with BIL and IRA funding. Essential project work across multiple units is ongoing or slated to be completed in Fiscal Year 2024. Additionally, multiple new priority watershed designations and associated WRAPs are anticipated for FY2024.  
+
+The Intermountain Region completed XX WRAPs in 2023….   
 
 ## References  
 
-USDA Forest Service. 2012. National Best Management Practices for Water Quality Management on National Forest System Lands, Volume 1: National Core BMP Technical Guide FS-990a.
+Potyondy, J., and Geier, T. 2011. Watershed Condition Classification Technical Guide. USDA Forest Service Report FS-978. 49 p.  
 
-
-
-
-
----
-title: ""
-output:
-  word_document
-params:
-  fiscal_year: ""
-editor_options: 
-  chunk_output_type: console
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),message = F, warning = F, error = F)
-library(dplyr)
-library(stringr)
-library(sf)
-library(ggtext)
-library(showtext)
-library(readr)
-library(ggplot2)
-library(forcats)
-font_add_google("Open Sans", family = "special")
-showtext_auto()
-
-showtext_opts(dpi = 1600)
-
-# get the most recent data from python script outputs
-report_path <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\reporting.gdb}'
-report_data <- r'{T:\FS\NFS\R01\Program\2500WatershedAirMgmt\GIS\WorkSpace\jerickson\Spatial\reports\data\}'
-report_sf <- read_sf(report_path, layer = paste0('gPAS_PL_Filtered_MT_', params$fiscal_year))
-report_sf_lines <- read_sf(report_path, layer = paste0('gPAS_LN_Filtered_MT_', params$fiscal_year))
-report_df_poly <- report_sf %>% st_drop_geometry()
-report_df_lines <- report_sf_lines %>% st_drop_geometry()
-
-write_csv(report_df_lines %>% st_drop_geometry(), paste0('inst/gPAS_LN_Filtered_MT_', params$fiscal_year,'.csv'))
-write_csv(report_df_poly %>% st_drop_geometry(), paste0('inst/gPAS_PL_Filtered_MT_', params$fiscal_year,'.csv'))
-
-# report_df_poly <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_poly.csv')
-# report_df_lines <- read_csv('Z:/GIT/reporting_mess_up/data/test_df_lines.csv')
-# 
-
-poly_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
-                                 sheet = 'gpas_polygon_final_list') 
-
-line_unique <- readxl::read_xlsx(paste0(report_data, '/gpas_unique_values.xlsx'),
-                                 sheet = 'gpas_line_final_list')
-
-report_df_filt_poly <- report_df_poly %>%
-             filter(SPATIAL_SIZE >= 0) %>% 
-             filter(ACTIVITY_CODE %in% poly_unique$gpas_poly_unique_values) %>% 
-             left_join(poly_unique, by = c('ACTIVITY_CODE' = 'gpas_poly_unique_values')) %>% 
-              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x)))%>%
-  mutate(
-    activity_type_category = tools::toTitleCase(activity_type_category),
-    activity_type_category = factor(activity_type_category, 
-                                         levels = tools::toTitleCase(c("channel, streambank, or floodplain restoration", "fish or aquatic habitat connectivity treatment",         
-                                         "invasive species management", "mine reclamation",                                       
-                                         "riparian, wetland, or spring maintenance or restoration", "road or trail decommissioning",
-                                         "road or trail repair, maintenance, or impact reduction", "other" ))))
-
-report_df_filt_line <- report_df_lines %>%
-             filter(SPATIAL_SIZE >= 0) %>% 
-             filter(ACTIVITY_CODE %in% line_unique$gpas_line_unique_values_but_filtered) %>% 
-              left_join(line_unique, by = c('ACTIVITY_CODE' = 'gpas_line_unique_values_but_filtered')) %>%
-              mutate(ACTIVITY_CODE = fct_reorder(ACTIVITY_CODE, SPATIAL_SIZE, ~sum(.x))) %>%
-              mutate(
-    activity_type_category = tools::toTitleCase(activity_type_category),
-    activity_type_category = factor(activity_type_category, 
-                                         levels = tools::toTitleCase(c("channel, streambank, or floodplain restoration", "fish or aquatic habitat connectivity treatment",         
-                                         "invasive species management", "mine reclamation",                                       
-                                         "riparian, wetland, or spring maintenance or restoration", "road or trail decommissioning",
-                                         "road or trail repair, maintenance, or impact reduction", "other" ))))
-
-myColors <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
-names(myColors) <- c("BEAVERHEAD-DEERLODGE","BITTERROOT", "CUSTER GALLATIN","FLATHEAD",  "HELENA - LEWIS AND CLARK", "KOOTENAI", "LOLO")
-
-g1 <- report_df_filt_poly %>% 
-  ggplot(aes(SPATIAL_SIZE,ACTIVITY_CODE)) +
-  geom_col(aes(fill = ADMIN_ORG_NAME),
-           show.legend = T, width = .5) +
-  custom_theme(font_family = 'special', font_size = 6) + 
-  scale_x_continuous(labels = scales::comma) + 
-  scale_fill_manual(values = myColors) +
-  labs(y = '', x = 'Area (acres)', fill = 'National Forest') +
-  theme(legend.position = 'right',
-        strip.text = element_text(size = 4),
-        strip.background = element_rect(fill = 'white', color = 'black')
-        ) +
-  facet_wrap(~activity_type_category, scale = 'free', ncol = 2)
-
-ggsave('g1.png',g1, device = 'png', path = system.file('app/www/images',package = 'reporting'), width = 6.9, height = 5.9, units = 'in', dpi = 1600)
-
-g2 <- report_df_filt_line  %>% 
-  ggplot(aes(SPATIAL_SIZE,ACTIVITY_CODE)) +
-  geom_col(aes(fill = ADMIN_ORG_NAME),
-           show.legend = T, width = .5) +
-  custom_theme(font_family = 'special', font_size = 6) + 
-  scale_x_continuous(labels = scales::comma) + 
-  scale_fill_manual(values = myColors)  +
-  labs(y = '', x = 'Length (Miles)', fill = 'National Forest') +
-  theme(legend.position = 'right',
-        strip.text = element_text(size = 4),
-        strip.background = element_rect(fill = 'white', color = 'black')
-        ) +
-  facet_wrap(~activity_type_category, scale = 'free', ncol = 2)
-
-ggsave('g2.png', g2, device = 'png', path = system.file('app/www/images', package = 'reporting'), width = 6.9, height = 5.9, units = 'in', dpi = 1600)
-
-
-poly_act_summary <- report_df_filt_poly %>% 
-  group_by(ACTIVITY_CODE, activity_type_category) %>% 
-  dplyr::summarise(total_acres = sum(SPATIAL_SIZE, na.rm = T)) %>% 
-  ungroup() 
-
-poly_act_summary_groups <- poly_act_summary %>% group_by(activity_type_category) %>% dplyr::summarise(sum_of_treatment = sum(total_acres, na.rm = TRUE)) %>% 
-  mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
-          acres_pct = round((sum_of_treatment/sum(sum_of_treatment))*100),
-           rank = rank(sum_of_treatment, ties.method = 'first'))
-
-
-line_act_summary <- report_df_filt_line %>% 
-  group_by(ACTIVITY_CODE, activity_type_category) %>% 
-  dplyr::summarise(total_miles = sum(SPATIAL_SIZE, na.rm = T))
-
-line_act_summary_groups <- line_act_summary %>% group_by(activity_type_category) %>%  dplyr::summarise(sum_of_treatment = sum(total_miles, na.rm = TRUE)) %>% 
-  mutate(sum_of_treatment = if_else(sum_of_treatment > 100, round(sum_of_treatment),round(sum_of_treatment, 2)),
-          miles_pct = round((sum_of_treatment/sum(sum_of_treatment))*100),
-           rank = rank(sum_of_treatment, ties.method = 'first'))
-
-int_to_words <- function(x) {
-
-                   index <- as.integer(x) + 1
-                   words <- str_to_title(c('Zero', 'one', 'two', 'three', 'four',
-                              'five', 'six', 'seven', 'eight', 'nine',
-                              'ten'))
-                   words[index]
-}
-
-```
-
-# USDA Forest Service - Montana Units 
-# FY`r params$fiscal_year` Accomplishment Highlights
-
-## Introduction  
-
-The latest iteration of the Memorandum of Understanding (MOU) between the U.S. Forest Service (USFS) in Montana and the Montana Department of Environmental Quality (MT DEQ) was signed in early 2020 as a five-year update to the longstanding MOU. Among those notable changes to the MOU was addition of Section IV (J), which states:  
-
-|               IV. The Forest Service shall:  
-
-	    
-|                             J. Provide DEQ with the annual U.S. Forest Service accomplishment report for activities
-|                             on NFS lands in Montana. Production of this annual accomplishment report would be
-|                             coordinated by the FS R1 regional hydrologist. Report contents would be drawn
-|                             primarily from the U.S. Forest Service’s Watershed Improvement Tracking (WIT)
-|                             database and would include all regional soil and water resource improvement activities
-|                             that occurred during the previous federal fiscal year.   
-            
-
-The format and content of this report has been mutually agreed upon as a work in progress; each subsequent iteration of the report will be refined in effort to best meet the needs of both agencies.   
-
-For `r params$fiscal_year`, geospatial data has again been shared with MT DEQ representing locations where selected watershed restoration activities have occurred on USFS-managed lands.  
-
-This `r params$fiscal_year` report provides a statewide snapshot of accomplishments in four reporting categories:  soil and watershed acres improved; stream miles improved/linear feature restoration activities; Best Management Practices monitoring; and priority watersheds improved.   Annual accomplishment reports from individual forests can be forwarded to MT DEQ where available.  
-
-The 2021 Bipartisan Infrastructure Law (BIL) created multiple new programs for funding watershed and aquatic restoration activities on NFS lands. USFS Region 1 has been the beneficiary of these programs, in particular the Legacy Roads and Trails program and Collaborative, Aquatic-Focused Landscape Restoration (CALR) program. Forests are actively working on implementation of projects associatted with these programs and have a variety of outyear BIL and/or IRA-funded projects already approved. More information on BIL-related funding accomplishments will be provided to Montana DEQ during coordination meetings and in subsequent years’ reports.  
-
-Data included in this FY`r params$fiscal_year` annual report have been drawn from the Forest Service’s national accomplishment reporting databases. Reported watershed restoration activities have been filtered to showcase accomplishments most pertinent to attainment and improvement of water resource beneficial uses. While national and regional reporting guidance is provided, individual Forests retain the flexibility to decide which activities they elect to report subject to the needs of their programs. More restoration and mitigation activities may have been completed by some Forests than reported here.   
-
-Though efforts have been made to ensure equitable accounting of accomplishments, not every acre reported can be assumed to have the same level of landscape benefit or effect. As noted above, accomplishment reports from individual National Forests can further contextualize the scope of work completed.  
-
-## Soil and Water Acres Improved  
-
-Figure 1 shows selected soil, water, and aquatic habitat project activities accounted for as acres improved on USFS managed lands in Montana. USFS Montana Forests performed a variety of activities in service of watershed restoration across seven general categories (Figure 1.).  
-
-Montana units completed `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(sum_of_treatment) %>%  prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(activity_type_category)`, accounting for `r poly_act_summary_groups %>% filter(rank == 8) %>% pull(acres_pct) %>%  prettyNum(big.mark=",",scientific=FALSE)` percent of all acres improved, followed by `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(sum_of_treatment) %>% round(0)  %>% prettyNum(big.mark=",",scientific=FALSE)` acres of `r poly_act_summary_groups %>% filter(rank == 7) %>% pull(activity_type_category)` (`r poly_act_summary_groups %>% filter(rank == 7) %>% pull(acres_pct) %>% prettyNum(big.mark=",",scientific=FALSE)` percent). Other notable project activities included in [X, Y, Z]. Multiple forests completed `r report_df_filt_poly %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` in Fiscal Year `r params$fiscal_year`.   
-
-
-## Stream Miles Improved/Linear Feature Restoration Activities  
-
-Figure 2 provides a statewide snapshot of stream miles improved through various restoration activities. As an illustrative example, total miles of road decommissioned should be interpreted as miles of stream habitat benefiting from road decommissioning, not the total mileage of roads decommissioned.  
-
-`r report_df_filt_line %>% group_by(activity_type_category, ADMIN_ORG_NAME) %>% reframe() %>% group_by(activity_type_category) %>% add_count() %>% filter(n >= 3) %>% slice(1) %>% pull(activity_type_category) %>% paste(collapse = ', ')` occurred across multiple Montana Forests in FY`r params$fiscal_year`.  Aquatic Organism Passage (AOP) improvements or barrier removals contributed to greater than `r report_df_filt_line %>% 
-  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
-  filter(ACTIVITY_CODE %in% c('AOP Improvement-Road', 'Crossing Improvement-Fish','AOP Eliminate Fish Entrainment',
-                              'AOP Barrier Removed-Non-Road', 'AOP Barrier Removed-Road ',     
-                              'AOP Fish Passage Structure' )) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of stream habitat accessibility across the state. Conversely, AOP barrier construction created approximately `r report_df_filt_line %>% 
-  filter(activity_type_category == 'Fish or Aquatic Habitat Connectivity Treatment') %>% 
-  filter(ACTIVITY_CODE %in% c('AOP Barrier Construction', 'AOP Barrier Removed-Non-Road')) %>% 
-  pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of habitat available for native species. `r report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
-  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() %>% int_to_words` national forest`r ifelse(report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% 
-  group_by(ADMIN_ORG_NAME) %>% reframe() %>% nrow() > 1, paste(s),'')` secured instream flow water rights protecting baseflows for aquatic habitat across roughly `r report_df_filt_line %>% 
-  filter(ACTIVITY_CODE == 'Instream Flow Secured') %>% pull(SPATIAL_SIZE) %>% sum() %>% round()` miles of streams.  
-
-##### `r knitr::include_graphics(system.file('app/www/images', 'g1.png', package = 'reporting'))`
-
-###### Figure 1. Selected soil, water, and aquatic habitat improvement activities completed by USFS Montana Forests during Fiscal Year `r params$fiscal_year`. 
-
-
-##### `r knitr::include_graphics(system.file('app/www/images', 'g2.png', package = 'reporting'))`
-
-###### Figure 2. Miles of stream habitat improvement or road miles restored by Montana forests in Fiscal Year `r params$fiscal_year`. 
-
-## Best Management Practice (BMP) Monitoring  
-
-The Forest Service’s National Core Best Management Practice (BMP) program was initiated in 2012. The intent of this program is to improve water quality management through consistent and effective application of BMPs associated with management activities conducted on NFS lands. In doing so, this program provides important tools to help ensure Forest Service management activities comply with the Clean Water Act. Prior to development of the national program, BMP planning and implementation was directed by overlapping state-specific guidance and individual forest and regional policies and protocols. The National Core BMP program provides a standardized set of core BMPs for avoiding or mitigating effects to soil and water resources associated the range of management activities. In addition to the core BMPs, it provides a series of systematic monitoring protocols for virtually all management activities conducted on NFS lands (USDA Forest Service 2012). 
-The Forest Service’s BMP monitoring program is administered on a biennial basis; Montana forests completed 42 BMP reviews during the FY2021-2022 monitoring timeframe. Difficulties with field meetings due to COVID and workloads associated with the Bipartisan Infrastructure Law (BIL) project implementation hampered the ability to conduct more reviews. BMP reviews included both implementation and effectiveness ratings. A composite rating is assigned based on the matrix shown in Figure 3.
-
-##### `r knitr::include_graphics(system.file('app/www/images', 'bmp_matrix.png', package = 'reporting'))`  
-
-###### Figure 3. Composite scoring matrix for BMP implementation and effectiveness reviews under that Forest Service’s National Core BMP Monitoring Program.  
-<br>
-
-Roughly one quarter of the 42 reviews were roads-related, while the rest of the reviews were distributed across the spectrum of other resource areas reviewed (Figure 4). Twenty four of the 42 reviews (57 percent) had composite ratings of “Excellent” or “Good” and the remainder (43 Percent) had composite ratings of “Fair” or “Poor”. 
-
-In terms of results for specific resource categories, BMP reviews for Vegetation Management, Minerals, and Fire Management resulted in composite ratings of exclusively “Excellent” or “Good”. Most Facilities and Aquatic Ecosystem Improvement project reviews also resulted in “Excellent” or “Good” composite ratings. 
-
-In two resource categories (Roads and Recreation), greater than 50 percent of reviews resulted in “Fair” or “Poor” composite ratings. For roads, specific categories where concerns were identified included:  
-
-|           --	Road BMPs following construction or reconstruction,
-|           --	BMPs used to protect water/aquatic/riparian resources associated with long term management
-|               of open Forest Service (Maintenance level 2-5) roads, and
-|           --	BMPs used to protect water/aquatic/riparian resources associated with stored roads.  
-
-Review locations were both random and nonrandom; in at least one instance, a review was undertaken specifically to evaluate a road segment with known issues. Most of these road reviews with adverse findings were isolated geographically and corrective actions were undertaken following the BMP review.
-Five recreation reviews were conducted across the region in FY2021-2022. Recreation reviews resulting in “Poor” composite ratings included two reviews of construction or reconstruction projects at ski areas and a developed recreation site review. Corrective actions were undertaken following the site review. 
-
-Five reviews resulted in a composite rating of “No BMPs”. These ratings are a result of having no BMPs or nonpoint source pollution management plans tied to a specific management activity. In many cases, it is not typical to have specified BMP plans directly associated with certain management activities, such as dispersed recreation site management. In practice, abatement or restoration activities are undertaken whenever water quality concerns are identified. This deficiency in protocol structure has been shared with National Core BMP program administrators.
-
-## Priority Watershed Conditions Improved  
-
-The Watershed Condition Framework (WCF) is the Forest Service’s nationally consistent approach to classifying and tracking watershed condition, identifying priority work locations, and carrying out essential project activities in effort to improve or maintain watershed conditions across NFS-managed lands. The Forest Service’s publicly accessible online Watershed Classification Interactive Map Viewer can be found at the following link: https://usfs.maps.arcgis.com/apps/MapSeries/index.html?appid=f4332e5b80c44874952b57e1db0b4407.  
-
-Priority subwatershed (i.e. HUC12) designation is accompanied by development of a Watershed Restoration Action Plan (WRAP), which consists of a suite of designated “essential projects” designed to address restoration needs within the watershed. When all essential projects have been completed in an action plan, watershed condition is designated as improved in the database or record.  Completion of all essential projects in a WRAP requires substantive funding and often takes many years to complete. Monitoring is conducted to evaluate longer-term efficacy of restoration efforts.   
-
-The Northern Region did not complete any Watershed Restoration Action Plans (WRAPs) in designated priority watersheds in FY2022. The region, including Montana national forests, has been consistently completing one or two WRAPs every fiscal year for the last few years. In FY2022, funding sources and essential project activities did not align (i.e. projects were completed in non-WRAP watersheds).. Essential project work across multiple units is ongoing or slated to be completed in Fiscal Year 2023, which  will result in completion of WRAPs in as many as three priority watersheds. Additionally, multiple new priority watershed designations and developed WRAPs are anticipated in FY2023.
-
-## References  
-
-USDA Forest Service. 2012. National Best Management Practices for Water Quality Management on National Forest System Lands, Volume 1: National Core BMP Technical Guide FS-990a.
-
-
-
-
-
+USDA Forest Service. 2012. National Best Management Practices for Water Quality Management on National Forest System Lands, Volume 1: National Core BMP Technical Guide FS-990a.  

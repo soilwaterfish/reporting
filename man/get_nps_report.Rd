@@ -7,11 +7,14 @@
 get_nps_report(
   fiscal_year,
   output_dir =
-    "T:\\\\FS\\\\NFS\\\\R01\\\\Program\\\\2500WatershedAirMgmt\\\\GIS\\\\WorkSpace\\\\jerickson\\\\Spatial\\\\reports\\\\documents\\\\"
+    "T:\\\\FS\\\\NFS\\\\R01\\\\Program\\\\2500WatershedAirMgmt\\\\GIS\\\\WorkSpace\\\\jerickson\\\\Spatial\\\\reports\\\\documents\\\\",
+  state
 )
 }
 \arguments{
 \item{fiscal_year}{A named list with fiscal_year, ex. list(fiscal_year = '2023').}
+
+\item{state}{Character. Lowercase abbreviation What state to do report for, e.g. 'mt'.}
 
 \item{output_file}{A file path to download file.}
 }
